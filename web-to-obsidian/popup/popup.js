@@ -16,6 +16,7 @@
     vaultNotesLoaded: false,
     propertyPresetRows: [],
     hasPropertyPreset: false,
+    persistPropsTimer: null,
   };
 
   const DYNAMIC_PROPERTY_KEYS = new Set(['title', 'source', 'captured']);
@@ -155,14 +156,40 @@
     return merged;
   }
 
+  function getPersistedPropertyRows() {
+    return state.propRows
+      .filter((row) => !isDynamicPropertyKey(row.key))
+      .map((row) => ({
+        key: String(row.key || '').trim(),
+        value: formatPropertyValue(row.key, row.value),
+      }))
+      .filter((row) => row.key);
+  }
+
+  async function persistPropertyPreset() {
+    if (!state.project) return;
+    const rows = getPersistedPropertyRows();
+    await ObsidianStorage.setPropertyPreset(state.project.id, rows);
+    state.propertyPresetRows = clonePropertyRows(rows);
+    state.hasPropertyPreset = true;
+  }
+
+  function schedulePersistPropertyPreset() {
+    if (!state.project) return;
+    if (state.persistPropsTimer) window.clearTimeout(state.persistPropsTimer);
+    state.persistPropsTimer = window.setTimeout(() => {
+      state.persistPropsTimer = null;
+      persistPropertyPreset().catch(() => {});
+    }, 150);
+  }
+
   async function loadPropertyPresetForProject() {
     state.propertyPresetRows = [];
     state.hasPropertyPreset = false;
     if (!state.project) return;
-    if (!state.project.yamlProperties || typeof state.project.yamlProperties !== 'object') return;
-    state.propertyPresetRows = clonePropertyRows(
-      Object.entries(state.project.yamlProperties).map(([key, value]) => ({ key, value }))
-    );
+    const saved = await ObsidianStorage.getPropertyPreset(state.project.id);
+    if (saved === null) return;
+    state.propertyPresetRows = clonePropertyRows(saved);
     state.hasPropertyPreset = true;
   }
 
@@ -179,6 +206,7 @@
     if (!items.some((item) => item.toLowerCase() === nextItem.toLowerCase())) {
       items.push(nextItem);
       row.value = stringifyLinkItems(items);
+      schedulePersistPropertyPreset();
     }
     renderProperties();
   }
@@ -189,6 +217,7 @@
     row.value = stringifyLinkItems(
       parseLinkItems(row.value).filter((item) => item.toLowerCase() !== String(linkValue).toLowerCase())
     );
+    schedulePersistPropertyPreset();
     renderProperties();
   }
 
@@ -230,10 +259,12 @@
     list.querySelectorAll('.prop-key').forEach((inp) => inp.addEventListener('input', (e) => {
       state.propRows[+e.target.dataset.idx].key = e.target.value;
       renderProperties(); // key may have changed to/from "tags" — refresh datalist wiring
+      schedulePersistPropertyPreset();
     }));
     list.querySelectorAll('.prop-value').forEach((inp) => {
       inp.addEventListener('input', (e) => {
         state.propRows[+e.target.dataset.idx].value = e.target.value;
+        schedulePersistPropertyPreset();
       });
       if (inp.getAttribute('list') === 'vaultTagsList') {
         inp.addEventListener('focus', loadVaultTags);
@@ -264,6 +295,7 @@
     list.querySelectorAll('.remove-prop').forEach((btn) => btn.addEventListener('click', (e) => {
       state.propRows.splice(+e.target.dataset.idx, 1);
       renderProperties();
+      schedulePersistPropertyPreset();
     }));
   }
 
@@ -357,6 +389,10 @@
 
   async function onProjectChange() {
     clearStatus();
+    if (state.persistPropsTimer) {
+      window.clearTimeout(state.persistPropsTimer);
+      state.persistPropsTimer = null;
+    }
     const id = el('projectSelect').value;
     state.project = state.projects.find((p) => p.id === id) || null;
     state.rootHandle = null;
@@ -491,6 +527,7 @@
     clearStatus();
     el('saveBtn').disabled = true;
     try {
+      await persistPropertyPreset();
       let content = el('previewSection').classList.contains('hidden')
         ? await runCapturePipeline()
         : el('previewText').value;

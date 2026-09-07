@@ -24,7 +24,7 @@
   <div id="appShell" class="wrap hidden">
     <header>
       <h1>Web → Obsidian</h1>
-      <p class="sub">Configure the local Obsidian vaults the extension can save into. Your YAML properties are remembered separately for each vault.</p>
+      <p class="sub">Configure the local Obsidian vaults the extension can save into. Properties are edited in the popup and remembered separately for each vault.</p>
     </header>
 
     <section class="panel">
@@ -66,12 +66,6 @@
             <input id="fDefaultFolder" placeholder="Sources" />
           </label>
         </div>
-      </div>
-
-      <div class="method-block">
-        <h3>YAML properties</h3>
-        <p class="hint">These properties are used for every new note in this vault. Saving changes updates the matching properties in existing notes in the default folder.</p>
-        <textarea id="fYamlProperties" placeholder="type: source\nstatus: inbox\ntags:\n  - reading"></textarea>
       </div>
 
       <div class="method-block">

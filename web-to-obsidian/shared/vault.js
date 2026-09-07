@@ -130,30 +130,6 @@ const ObsidianVault = (() => {
     await writable.close();
   }
 
-  async function updateFolderProperties(rootHandle, folderPath, properties, removeKeys = []) {
-    let dir;
-    try {
-      dir = await getDirectory(rootHandle, folderPath, { create: false });
-    } catch (e) {
-      return 0;
-    }
-    let updated = 0;
-    for await (const [name, handle] of dir.entries()) {
-      if (handle.kind !== 'file' || !name.toLowerCase().endsWith('.md')) continue;
-      const raw = await readFile(handle);
-      const split = ObsidianYaml.splitFrontMatter(raw);
-      const current = ObsidianYaml.parseProperties(split.yaml);
-      const merged = { ...current, ...properties };
-      removeKeys.forEach((key) => delete merged[key]);
-      const content = ObsidianYaml.buildMarkdownWithFrontMatter(merged, split.body);
-      const writable = await handle.createWritable();
-      await writable.write(content);
-      await writable.close();
-      updated += 1;
-    }
-    return updated;
-  }
-
   async function suggestNextFilename(rootHandle, folderPath, candidate) {
     const safeCandidate = ObsidianFilename.sanitizeFilename(candidate || 'Untitled');
     const match = /^(.*?)(\d+)$/.exec(safeCandidate);
@@ -254,7 +230,6 @@ const ObsidianVault = (() => {
     writeFileAtPath,
     scanVaultTags,
     scanVaultNoteNames,
-    updateFolderProperties,
     suggestNextFilename,
   };
 })();

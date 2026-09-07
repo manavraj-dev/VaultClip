@@ -2,18 +2,18 @@
 
 Capture web pages, selections, conversations, videos, or a drawn region as clean Markdown notes in a local Obsidian vault.
 
-The extension runs entirely in the browser. It uses the File System Access API to read your vault, suggest folders and existing tags, update YAML properties, and write notes directly to disk. There is no account, server, telemetry, or Obsidian URI workflow.
+The extension runs entirely in the browser. It uses the File System Access API to read your vault, suggest folders and existing tags, edit YAML properties in the popup, and write notes directly to disk. There is no account, server, telemetry, or Obsidian URI workflow.
 
 ## Features
 
 - Capture a selection, article, full page, supported conversation, or drawn region.
 - Specialized extraction for common AI chats, YouTube, Reddit, Wikipedia, Medium, and more.
 - Preserve headings, lists, links, images, tables, blockquotes, tasks, and code blocks.
-- Configure multiple local vaults, each with its own destination folder and YAML properties.
-- Edit YAML properties in the extension using standard `key: value` format, including arrays.
+- Configure multiple local vaults, each with its own destination folder and remembered properties.
+- Edit YAML properties directly in the popup's **Properties** area, including arrays and links.
 - Remember property settings independently for every vault.
-- Properties removed while editing one note stay removed from that note and are not silently re-added on the next capture. Persistent defaults come only from the vault settings YAML block.
-- When vault YAML settings are saved, matching properties are updated in every Markdown note in the configured destination folder.
+- Properties added or edited for a note are remembered for the next note in that vault.
+- Properties removed in the popup are removed from the remembered set and are not silently re-added later. Add them again in the popup when needed.
 - Suggest the next sequential filename: an existing `b2` leads to `b3`.
 - Suggest existing vault tags and note links while editing properties.
 - Preview and edit the complete Markdown note before saving.
@@ -35,17 +35,8 @@ There is no build step. The only vendored dependency is Turndown under `lib/`.
 2. Select **Add vault**.
 3. Enter the vault name and connect the vault's root folder. The folder name is checked against the vault name.
 4. Set the default destination folder, such as `Sources`.
-5. Enter the YAML properties to use for notes, for example:
-
-   ```yaml
-   type: source
-   status: inbox
-   tags:
-     - reading
-   ```
-
-6. Save the vault. The property format is remembered for that vault. Existing Markdown files directly inside the configured destination folder receive the updated properties, and properties removed from the YAML block are removed from those notes.
-7. Open a page, choose a capture mode, edit properties or the suggested filename, preview the note, and save it.
+5. Save the vault.
+6. Open a page, choose a capture mode, edit the properties directly in the popup, preview the note, and save it. The non-automatic properties are remembered for that vault.
 
 The extension only writes to a folder after the browser grants read/write permission. If the destination folder does not exist yet, it is created when the first note is saved.
 
@@ -80,7 +71,7 @@ The main modules are:
 
 - `content/`: extraction, adapters, and drawn-region capture.
 - `popup/`: capture controls, property editing, preview, and note saving.
-- `options/`: local vault and per-vault YAML configuration.
+- `options/`: local vault configuration.
 - `shared/vault.js`: folder access, note writing, tag/link scans, property updates, and filename suggestions.
 - `shared/yaml.js`: front matter parsing and serialization.
 - `shared/storage.js`: local vault configuration and property presets.

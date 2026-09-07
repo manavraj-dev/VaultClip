@@ -14,7 +14,6 @@
  *   defaultFolder: string,       // path within vault, e.g. "Sources"
  *   rules: string,               // free-form notes on what each tag/folder/property means for this vault
  *   rulesNotePath: string,       // ('folder' method) vault-relative path where `rules` is mirrored as a real note
- *   yamlProperties: object,      // default YAML properties for new and existing notes
  * }
  */
 const ObsidianStorage = (() => {
