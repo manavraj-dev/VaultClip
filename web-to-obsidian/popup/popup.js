@@ -309,8 +309,7 @@
     state.propRows.push({ key, value });
   }
 
-  function applyAutoProperties({ title, url }) {
-    upsertPropRow('title', title || '');
+  function applyAutoProperties({ url }) {
     upsertPropRow('source', url || '');
     upsertPropRow('captured', new Date().toISOString().slice(0, 10));
   }
@@ -471,7 +470,6 @@
     state.propRows = nextRows;
     const source = state.regionResult && !state.regionResult.error ? state.regionResult : null;
     applyAutoProperties({
-      title: source ? source.title : (state.pageInfo ? state.pageInfo.title : ''),
       url: source ? source.url : (state.tab ? state.tab.url : ''),
     });
     renderProperties();

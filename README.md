@@ -14,6 +14,7 @@ The extension runs entirely in the browser. It uses the File System Access API t
 - Remember property settings independently for every vault.
 - Properties added or edited for a note are remembered for the next note in that vault.
 - Properties removed in the popup are removed from the remembered set and are not silently re-added later. Add them again in the popup when needed.
+- The page title is used for the filename suggestion, not added as a default property.
 - Suggest the next sequential filename: an existing `b2` leads to `b3`.
 - Suggest existing vault tags and note links while editing properties.
 - Preview and edit the complete Markdown note before saving.
