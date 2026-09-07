@@ -130,7 +130,7 @@ const ObsidianVault = (() => {
     await writable.close();
   }
 
-  async function updateFolderProperties(rootHandle, folderPath, properties) {
+  async function updateFolderProperties(rootHandle, folderPath, properties, removeKeys = []) {
     let dir;
     try {
       dir = await getDirectory(rootHandle, folderPath, { create: false });
@@ -143,7 +143,9 @@ const ObsidianVault = (() => {
       const raw = await readFile(handle);
       const split = ObsidianYaml.splitFrontMatter(raw);
       const current = ObsidianYaml.parseProperties(split.yaml);
-      const content = ObsidianYaml.buildMarkdownWithFrontMatter({ ...current, ...properties }, split.body);
+      const merged = { ...current, ...properties };
+      removeKeys.forEach((key) => delete merged[key]);
+      const content = ObsidianYaml.buildMarkdownWithFrontMatter(merged, split.body);
       const writable = await handle.createWritable();
       await writable.write(content);
       await writable.close();

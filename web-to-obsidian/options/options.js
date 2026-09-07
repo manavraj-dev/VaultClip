@@ -50,10 +50,7 @@
     el('editorTitle').textContent = project ? `Edit "${project.vaultName || project.name}"` : 'New vault';
     el('fVaultName').value = project ? project.vaultName || '' : '';
     el('fDefaultFolder').value = project ? project.defaultFolder || '' : '';
-    const preset = project ? await ObsidianStorage.getPropertyPreset(project.id) : null;
-    const savedProperties = preset
-      ? Object.fromEntries(preset.map((row) => [row.key, row.value]))
-      : (project?.yamlProperties || {});
+    const savedProperties = project?.yamlProperties || {};
     el('fYamlProperties').value = ObsidianYaml.stringifyProperties(savedProperties);
     el('fRules').value = project ? project.rules || '' : '';
     el('fRulesNotePath').value = project ? project.rulesNotePath || ObsidianStorage.DEFAULT_RULES_NOTE_PATH : ObsidianStorage.DEFAULT_RULES_NOTE_PATH;
@@ -183,6 +180,7 @@
       if (!proceed) return;
     }
 
+    const previousProperties = editing?.yamlProperties || {};
     const project = {
       id: editing ? editing.id : ObsidianStorage.newId(),
       name: vaultName, // no separate project name — the vault name is the identity
@@ -209,8 +207,10 @@
     if (project.handleKey && project.defaultFolder) {
       const handle = connectedHandle || await ObsidianVault.getHandleForProject(project);
       const granted = handle && await ObsidianVault.verifyPermission(handle, 'readwrite');
-      if (granted && Object.keys(project.yamlProperties).length > 0) {
-        await ObsidianVault.updateFolderProperties(handle, project.defaultFolder, project.yamlProperties);
+      if (granted) {
+        const removedKeys = Object.keys(previousProperties)
+          .filter((key) => !Object.prototype.hasOwnProperty.call(project.yamlProperties, key));
+        await ObsidianVault.updateFolderProperties(handle, project.defaultFolder, project.yamlProperties, removedKeys);
       }
     }
     closeEditor();

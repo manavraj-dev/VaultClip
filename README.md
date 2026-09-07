@@ -12,6 +12,7 @@ The extension runs entirely in the browser. It uses the File System Access API t
 - Configure multiple local vaults, each with its own destination folder and YAML properties.
 - Edit YAML properties in the extension using standard `key: value` format, including arrays.
 - Remember property settings independently for every vault.
+- Properties removed while editing one note stay removed from that note and are not silently re-added on the next capture. Persistent defaults come only from the vault settings YAML block.
 - When vault YAML settings are saved, matching properties are updated in every Markdown note in the configured destination folder.
 - Suggest the next sequential filename: an existing `b2` leads to `b3`.
 - Suggest existing vault tags and note links while editing properties.
@@ -43,7 +44,7 @@ There is no build step. The only vendored dependency is Turndown under `lib/`.
      - reading
    ```
 
-6. Save the vault. The property format is remembered for that vault. Existing Markdown files directly inside the configured destination folder receive the updated properties.
+6. Save the vault. The property format is remembered for that vault. Existing Markdown files directly inside the configured destination folder receive the updated properties, and properties removed from the YAML block are removed from those notes.
 7. Open a page, choose a capture mode, edit properties or the suggested filename, preview the note, and save it.
 
 The extension only writes to a folder after the browser grants read/write permission. If the destination folder does not exist yet, it is created when the first note is saved.
