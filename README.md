@@ -42,7 +42,7 @@ The extension only writes to a folder after the browser grants read/write permis
 
 ## Filename suggestions
 
-Filenames start from the captured page title. When the title ends in a number, the extension scans the selected folder for the same prefix and suggests the next number. For example, with `b2.md` already present, a capture titled `b2` suggests `b3`.
+Filenames start from the captured page title. After you save a numbered filename, the extension remembers that sequence for the selected vault and folder. The next time the popup opens it suggests the next number, such as `bit 1` → `bit 2` → `bit 3`. Existing files are also scanned so the sequence continues from the highest matching number.
 
 The filename remains fully editable. Existing notes are never overwritten; a duplicate name receives a numeric suffix when saved.
 

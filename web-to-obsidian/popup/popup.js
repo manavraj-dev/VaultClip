@@ -403,7 +403,9 @@
     el('vaultNotesList').innerHTML = '';
     el('rulesPanel').classList.add('hidden');
     updateRulesPanelContent();
-    el('folderInput').value = state.project ? state.project.defaultFolder || '' : '';
+    const lastUsed = await ObsidianStorage.getLastUsed();
+    const lastFolder = state.project && lastUsed.projectId === state.project.id ? lastUsed.folder : '';
+    el('folderInput').value = state.project ? lastFolder || state.project.defaultFolder || '' : '';
     populateFolderOptions([]);
     await loadPropertyPresetForProject();
     initializeProperties();
@@ -432,7 +434,15 @@
         const title = state.regionResult && !state.regionResult.error
           ? state.regionResult.title
           : (state.pageInfo ? state.pageInfo.title : 'Untitled');
-        el('filenameInput').value = await ObsidianVault.suggestNextFilename(handle, state.project.defaultFolder || '', title);
+        const currentFolder = el('folderInput').value || '';
+        const previousFilename = lastUsed.projectId === state.project.id && lastUsed.folder === currentFolder
+          ? lastUsed.filename
+          : '';
+        el('filenameInput').value = await ObsidianVault.suggestNextFilename(
+          handle,
+          currentFolder,
+          previousFilename || title
+        );
       } catch (e) {
         showStatus(`Couldn\u2019t read the vault folder: ${e.message}`, 'error');
       }
@@ -503,7 +513,7 @@
     const props = buildPropertiesObject();
     const finalMarkdown = ObsidianYaml.buildMarkdownWithFrontMatter(props, markdown);
 
-    if (!state.filenameTouched) {
+    if (!state.filenameTouched && !el('filenameInput').value.trim()) {
       el('filenameInput').value = ObsidianFilename.sanitizeFilename(result.title || 'Untitled');
     }
     return finalMarkdown;
@@ -542,7 +552,12 @@
       const savedName = await ObsidianVault.writeNote(handle, folder, filename, content);
       showStatus(`Saved to ${folder ? folder + '/' : ''}${savedName}`, 'success');
 
-      await ObsidianStorage.setLastUsed({ projectId: state.project.id, mode: getSelectedMode() });
+      await ObsidianStorage.setLastUsed({
+        projectId: state.project.id,
+        mode: getSelectedMode(),
+        filename: filename.replace(/\.md$/i, ''),
+        folder,
+      });
     } catch (e) {
       showStatus(e.message, 'error');
     } finally {
