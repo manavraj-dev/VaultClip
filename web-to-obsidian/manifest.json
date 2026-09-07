@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Web \u2192 Obsidian",
+  "version": "0.2.0",
+  "description": "Capture any web page (or just a box you draw around part of it) as clean Markdown and save it straight into your Obsidian vault, using your own templates, folders, and properties.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "contextMenus"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
+  "options_page": "options/options.html",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": [
+        "content/extractor.js",
+        "content/adapters.js",
+        "content/regionSelect.js",
+        "content/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

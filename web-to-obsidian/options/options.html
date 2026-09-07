@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Web → Obsidian — Settings</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <div id="termsGate" class="terms-gate hidden">
+    <div class="terms-box">
+      <h2>Terms &amp; Conditions</h2>
+      <div id="termsText" class="terms-text"></div>
+      <label class="terms-check">
+        <input type="checkbox" id="termsCheckbox" />
+        <span>I have read and agree to the Terms &amp; Conditions</span>
+      </label>
+      <div class="terms-actions">
+        <button id="declineTermsBtn" class="secondary-btn" type="button">Decline &amp; close</button>
+        <button id="acceptTermsBtn" class="primary-btn" type="button" disabled>I Agree</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="appShell" class="wrap hidden">
+    <header>
+      <h1>Web → Obsidian</h1>
+      <p class="sub">Configure the Obsidian vaults the extension can save into. Obsidian stays the source of truth &mdash; the extension only reads your templates and writes finished notes.</p>
+    </header>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Vaults</h2>
+        <button id="newProjectBtn" class="primary-btn">+ Add vault</button>
+      </div>
+      <div id="projectList" class="project-list"></div>
+      <p id="emptyHint" class="hint hidden">No vaults yet. Add one to start capturing.</p>
+    </section>
+
+    <section id="editorPanel" class="panel hidden">
+      <div class="panel-header">
+        <h2 id="editorTitle">New vault</h2>
+      </div>
+
+      <div class="grid">
+        <label class="f">
+          <span>Obsidian vault name</span>
+          <input id="fVaultName" placeholder="Knowledge" />
+          <small>The exact name of the vault as it appears in Obsidian. This is also how the vault is identified throughout the extension — there's no separate project name.</small>
+        </label>
+
+        <label class="f">
+          <span>Save method</span>
+          <select id="fMethod">
+            <option value="folder">Local folder (reads real templates, writes files directly — recommended)</option>
+            <option value="uri">Obsidian URI (no folder access needed, uses templates defined below)</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="folderMethodBlock" class="method-block">
+        <div class="connect-row">
+          <button id="connectFolderBtn" class="secondary-btn" type="button">Connect vault folder…</button>
+          <span id="connectStatus" class="connect-status">Not connected</span>
+        </div>
+        <p id="vaultNameWarning" class="warning-note hidden"></p>
+        <div class="grid">
+          <label class="f">
+            <span>Template folder (path inside vault)</span>
+            <input id="fTemplateFolder" placeholder="Templates" />
+          </label>
+          <label class="f">
+            <span>Default destination folder</span>
+            <input id="fDefaultFolder" placeholder="Sources" />
+          </label>
+        </div>
+      </div>
+
+      <div id="uriMethodBlock" class="method-block hidden">
+        <label class="f">
+          <span>Default destination folder</span>
+          <input id="fDefaultFolderUri" placeholder="Sources" />
+        </label>
+
+        <div class="panel-header">
+          <h3>Templates</h3>
+          <button id="addManualTemplateBtn" class="link-btn" type="button">+ Add template</button>
+        </div>
+        <p class="hint">Since the URI method can't read your vault, define the templates you use most often here — matching the properties and structure of your Obsidian templates.</p>
+        <div id="manualTemplates"></div>
+
+        <h3>Known tags</h3>
+        <p class="hint">The URI method can't scan your vault for tag autocomplete, so list the tags you use most often here (comma-separated). They'll show up as suggestions in the popup's tags field.</p>
+        <input id="fKnownTags" placeholder="reading, source/article, project-x" />
+      </div>
+
+      <div class="method-block">
+        <h3>Vault rules</h3>
+        <p class="hint">Write down what each tag, folder, or property is for in this vault — e.g. which tag means "to read" vs. "reference", or which folder a given template belongs in. The popup shows this whenever you tap "Vault rules" while filling in properties, so it's easy to stay consistent.</p>
+        <textarea id="fRules" placeholder="#reading — capture this to reread later&#10;#reference — capture this to cite later&#10;Sources/Articles — general web articles&#10;Sources/AI Chats — saved AI conversations"></textarea>
+
+        <div id="rulesSyncRow" class="connect-row hidden">
+          <label class="f" style="flex:1">
+            <span>Rules note path in vault</span>
+            <input id="fRulesNotePath" placeholder="Web to Obsidian Rules.md" />
+          </label>
+          <button id="loadRulesFromVaultBtn" class="secondary-btn" type="button">Load from vault</button>
+          <button id="saveRulesToVaultBtn" class="secondary-btn" type="button">Save to vault</button>
+        </div>
+        <p id="rulesSyncHint" class="hint hidden">Saving writes a real note at this path in your vault, so you (or Obsidian plugins) can also read/edit it there directly. It's independent from Save/Cancel below — sync happens immediately.</p>
+      </div>
+
+      <div class="editor-actions">
+        <button id="cancelEditBtn" class="secondary-btn" type="button">Cancel</button>
+        <button id="saveProjectBtn" class="primary-btn" type="button">Save vault</button>
+      </div>
+    </section>
+
+    <footer>
+      <p>Web → Obsidian keeps everything local: no account, no telemetry, nothing leaves your browser.</p>
+    </footer>
+  </div>
+
+  <script src="../shared/terms.js"></script>
+  <script src="../shared/idb.js"></script>
+  <script src="../shared/yaml.js"></script>
+  <script src="../shared/filename.js"></script>
+  <script src="../shared/storage.js"></script>
+  <script src="../shared/vault.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

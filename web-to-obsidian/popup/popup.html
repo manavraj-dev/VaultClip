@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Web → Obsidian</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="app">
+
+    <div id="termsGate" class="terms-gate hidden">
+      <h2>Terms &amp; Conditions</h2>
+      <div id="termsText" class="terms-text"></div>
+      <label class="terms-check">
+        <input type="checkbox" id="termsCheckbox" />
+        <span>I have read and agree to the Terms &amp; Conditions</span>
+      </label>
+      <div class="terms-actions">
+        <button id="declineTermsBtn" class="secondary-btn" type="button">Decline</button>
+        <button id="acceptTermsBtn" class="primary-btn" type="button" disabled>I Agree</button>
+      </div>
+    </div>
+
+    <div id="appShell" class="hidden">
+      <header class="header">
+        <div class="logo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L4 9l3 11h10l3-11-8-7z" fill="#8f6fff"/>
+          </svg>
+          <span>Web → Obsidian</span>
+        </div>
+        <button id="openOptions" class="icon-btn" title="Settings">⚙</button>
+      </header>
+
+      <div id="noProjects" class="empty-state hidden">
+        <p>No Obsidian vaults configured yet.</p>
+        <button id="goToOptionsBtn" class="primary-btn">Set up a vault</button>
+      </div>
+
+      <main id="mainForm" class="form hidden">
+
+        <section class="field">
+          <label>Capture</label>
+          <div class="radio-row" id="captureModeRow">
+            <label class="radio-pill"><input type="radio" name="mode" value="selection"><span>Selection</span></label>
+            <label class="radio-pill"><input type="radio" name="mode" value="article" checked><span>Article</span></label>
+            <label class="radio-pill"><input type="radio" name="mode" value="page"><span>Entire Page</span></label>
+            <label class="radio-pill hidden" id="conversationPill"><input type="radio" name="mode" value="conversation"><span>Conversation</span></label>
+            <label class="radio-pill hidden" id="regionPill"><input type="radio" name="mode" value="region"><span>Selected area</span></label>
+          </div>
+          <div id="adapterNote" class="hint hidden"></div>
+          <button id="selectAreaBtn" class="secondary-btn area-btn" type="button">▭ Draw a box on the page…</button>
+          <div class="hint">Draws a translucent box over the page — whatever falls inside it gets pulled in as the capture, everything else (tags, properties, filename) still fills in as usual.</div>
+        </section>
+
+        <section class="field">
+          <label for="projectSelect">Vault</label>
+          <select id="projectSelect"></select>
+        </section>
+
+        <section class="field">
+          <label for="templateSelect">Template</label>
+          <select id="templateSelect">
+            <option value="">No template</option>
+          </select>
+        </section>
+
+        <section class="field">
+          <label for="folderInput">Folder</label>
+          <input list="folderOptions" id="folderInput" placeholder="e.g. Sources/Articles" />
+          <datalist id="folderOptions"></datalist>
+        </section>
+
+        <section class="field">
+          <div class="field-header">
+            <label>Properties</label>
+            <div class="field-header-actions">
+              <button id="viewRulesBtn" class="link-btn" type="button">Vault rules</button>
+              <button id="addPropertyBtn" class="link-btn" type="button">+ Add property</button>
+            </div>
+          </div>
+          <div id="propertiesList" class="properties-list"></div>
+          <datalist id="vaultTagsList"></datalist>
+          <datalist id="vaultNotesList"></datalist>
+          <div id="rulesPanel" class="rules-panel hidden">
+            <div class="rules-panel-header">
+              <strong>Vault rules</strong>
+              <button id="closeRulesBtn" class="icon-btn" type="button">✕</button>
+            </div>
+            <pre id="rulesText" class="rules-text"></pre>
+            <button id="editRulesBtn" class="link-btn" type="button">Edit in Settings →</button>
+          </div>
+        </section>
+
+        <section class="field">
+          <label for="filenameInput">Filename</label>
+          <input id="filenameInput" placeholder="Untitled.md" />
+        </section>
+
+        <section class="field">
+          <div class="field-header">
+            <label>Notes</label>
+            <button id="toggleExtraBtn" class="link-btn" type="button">✎ Add your own content</button>
+          </div>
+          <div id="extraContentWrap" class="hidden">
+            <textarea id="extraContentInput" placeholder="Add anything you want appended to the note before it's saved — your own commentary, follow-up questions, a summary, etc."></textarea>
+          </div>
+        </section>
+
+        <div id="statusBar" class="status hidden"></div>
+
+        <section id="previewSection" class="preview hidden">
+          <div class="field-header">
+            <label>Preview</label>
+          </div>
+          <textarea id="previewText" spellcheck="false"></textarea>
+        </section>
+
+        <div class="actions">
+          <button id="previewBtn" class="secondary-btn" type="button">Preview</button>
+          <button id="saveBtn" class="primary-btn" type="button">Save to Obsidian</button>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="../shared/terms.js"></script>
+  <script src="../shared/idb.js"></script>
+  <script src="../shared/yaml.js"></script>
+  <script src="../shared/filename.js"></script>
+  <script src="../shared/storage.js"></script>
+  <script src="../shared/vault.js"></script>
+  <script src="../lib/turndown.js"></script>
+  <script src="../lib/turndown-plugin-gfm.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
