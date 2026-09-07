@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Web \u2192 Obsidian",
   "version": "0.2.0",
-  "description": "Capture any web page (or just a box you draw around part of it) as clean Markdown and save it straight into your Obsidian vault, using your own templates, folders, and properties.",
+  "description": "Capture any web page (or just a box you draw around part of it) as clean Markdown and save it straight into your local Obsidian vault with editable YAML properties.",
   "permissions": [
     "storage",
     "activeTab",

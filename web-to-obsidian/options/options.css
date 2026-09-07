@@ -75,17 +75,6 @@ textarea { min-height: 70px; font-family: "SF Mono", Menlo, Consolas, monospace;
 .connect-status { font-size: 12px; color: var(--text-dim); }
 .connect-status.ok { color: var(--success); }
 
-.manual-template {
-  background: var(--panel2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px;
-  margin-bottom: 10px;
-}
-.manual-template .row { display: flex; gap: 10px; margin-bottom: 8px; }
-.manual-template .row > * { flex: 1; }
-.manual-template .remove-template { align-self: flex-start; }
-
 .editor-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
 
 .primary-btn, .secondary-btn, .link-btn {

@@ -24,7 +24,7 @@
   <div id="appShell" class="wrap hidden">
     <header>
       <h1>Web → Obsidian</h1>
-      <p class="sub">Configure the Obsidian vaults the extension can save into. Obsidian stays the source of truth &mdash; the extension only reads your templates and writes finished notes.</p>
+      <p class="sub">Configure the local Obsidian vaults the extension can save into. Your YAML properties are remembered separately for each vault.</p>
     </header>
 
     <section class="panel">
@@ -50,10 +50,7 @@
 
         <label class="f">
           <span>Save method</span>
-          <select id="fMethod">
-            <option value="folder">Local folder (reads real templates, writes files directly — recommended)</option>
-            <option value="uri">Obsidian URI (no folder access needed, uses templates defined below)</option>
-          </select>
+          <input value="Local folder" disabled />
         </label>
       </div>
 
@@ -65,40 +62,24 @@
         <p id="vaultNameWarning" class="warning-note hidden"></p>
         <div class="grid">
           <label class="f">
-            <span>Template folder (path inside vault)</span>
-            <input id="fTemplateFolder" placeholder="Templates" />
-          </label>
-          <label class="f">
             <span>Default destination folder</span>
             <input id="fDefaultFolder" placeholder="Sources" />
           </label>
         </div>
       </div>
 
-      <div id="uriMethodBlock" class="method-block hidden">
-        <label class="f">
-          <span>Default destination folder</span>
-          <input id="fDefaultFolderUri" placeholder="Sources" />
-        </label>
-
-        <div class="panel-header">
-          <h3>Templates</h3>
-          <button id="addManualTemplateBtn" class="link-btn" type="button">+ Add template</button>
-        </div>
-        <p class="hint">Since the URI method can't read your vault, define the templates you use most often here — matching the properties and structure of your Obsidian templates.</p>
-        <div id="manualTemplates"></div>
-
-        <h3>Known tags</h3>
-        <p class="hint">The URI method can't scan your vault for tag autocomplete, so list the tags you use most often here (comma-separated). They'll show up as suggestions in the popup's tags field.</p>
-        <input id="fKnownTags" placeholder="reading, source/article, project-x" />
+      <div class="method-block">
+        <h3>YAML properties</h3>
+        <p class="hint">These properties are used for every new note in this vault. Saving changes updates the matching properties in existing notes in the default folder.</p>
+        <textarea id="fYamlProperties" placeholder="type: source\nstatus: inbox\ntags:\n  - reading"></textarea>
       </div>
 
       <div class="method-block">
         <h3>Vault rules</h3>
-        <p class="hint">Write down what each tag, folder, or property is for in this vault — e.g. which tag means "to read" vs. "reference", or which folder a given template belongs in. The popup shows this whenever you tap "Vault rules" while filling in properties, so it's easy to stay consistent.</p>
+        <p class="hint">Write down what each tag, folder, or property is for in this vault — e.g. which tag means "to read" vs. "reference". The popup shows this whenever you tap "Vault rules" while filling in properties, so it's easy to stay consistent.</p>
         <textarea id="fRules" placeholder="#reading — capture this to reread later&#10;#reference — capture this to cite later&#10;Sources/Articles — general web articles&#10;Sources/AI Chats — saved AI conversations"></textarea>
 
-        <div id="rulesSyncRow" class="connect-row hidden">
+        <div id="rulesSyncRow" class="connect-row">
           <label class="f" style="flex:1">
             <span>Rules note path in vault</span>
             <input id="fRulesNotePath" placeholder="Web to Obsidian Rules.md" />
@@ -106,7 +87,7 @@
           <button id="loadRulesFromVaultBtn" class="secondary-btn" type="button">Load from vault</button>
           <button id="saveRulesToVaultBtn" class="secondary-btn" type="button">Save to vault</button>
         </div>
-        <p id="rulesSyncHint" class="hint hidden">Saving writes a real note at this path in your vault, so you (or Obsidian plugins) can also read/edit it there directly. It's independent from Save/Cancel below — sync happens immediately.</p>
+        <p id="rulesSyncHint" class="hint">Saving writes a real note at this path in your vault, so you (or Obsidian plugins) can also read/edit it there directly. It's independent from Save/Cancel below — sync happens immediately.</p>
       </div>
 
       <div class="editor-actions">

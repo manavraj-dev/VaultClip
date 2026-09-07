@@ -3,7 +3,6 @@
   let projects = [];
   let editing = null; // project object being edited (or null)
   let connectedHandle = null; // FileSystemDirectoryHandle just picked, pending save
-  let manualTemplates = []; // {name, propertiesText, bodyTemplate}
 
   async function refreshList() {
     projects = await ObsidianStorage.getProjects();
@@ -13,7 +12,7 @@
     projects.forEach((p) => {
       const card = document.createElement('div');
       card.className = 'project-card';
-      const methodLabel = p.method === 'folder' ? 'Local folder' : 'Obsidian URI';
+      const methodLabel = 'Local folder';
       card.innerHTML = `
         <div class="meta">
           <strong>${escapeHtml(p.vaultName || p.name || 'Untitled vault')}</strong>
@@ -44,28 +43,23 @@
     await refreshList();
   }
 
-  function openEditor(project) {
+  async function openEditor(project) {
     editing = project || null;
     connectedHandle = null;
-    manualTemplates = project && project.templates ? project.templates.map((t) => ({
-      name: t.name,
-      propertiesText: ObsidianYaml.stringifyProperties(t.properties || {}),
-      bodyTemplate: t.bodyTemplate || '',
-    })) : [];
 
     el('editorTitle').textContent = project ? `Edit "${project.vaultName || project.name}"` : 'New vault';
     el('fVaultName').value = project ? project.vaultName || '' : '';
-    el('fMethod').value = project ? project.method : 'folder';
-    el('fTemplateFolder').value = project ? project.templateFolder || '' : 'Templates';
     el('fDefaultFolder').value = project ? project.defaultFolder || '' : '';
-    el('fDefaultFolderUri').value = project ? project.defaultFolder || '' : '';
-    el('fKnownTags').value = project && Array.isArray(project.knownTags) ? project.knownTags.join(', ') : '';
+    const preset = project ? await ObsidianStorage.getPropertyPreset(project.id) : null;
+    const savedProperties = preset
+      ? Object.fromEntries(preset.map((row) => [row.key, row.value]))
+      : (project?.yamlProperties || {});
+    el('fYamlProperties').value = ObsidianYaml.stringifyProperties(savedProperties);
     el('fRules').value = project ? project.rules || '' : '';
     el('fRulesNotePath').value = project ? project.rulesNotePath || ObsidianStorage.DEFAULT_RULES_NOTE_PATH : ObsidianStorage.DEFAULT_RULES_NOTE_PATH;
     el('vaultNameWarning').classList.add('hidden');
     updateConnectStatus(project && project.method === 'folder' && project.handleKey ? 'existing' : 'none');
     toggleMethodBlocks();
-    renderManualTemplates();
     el('editorPanel').classList.remove('hidden');
     el('editorPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -77,12 +71,7 @@
   }
 
   function toggleMethodBlocks() {
-    const method = el('fMethod').value;
-    el('folderMethodBlock').classList.toggle('hidden', method !== 'folder');
-    el('uriMethodBlock').classList.toggle('hidden', method !== 'uri');
-    // Syncing rules to a real vault note only makes sense with folder access.
-    el('rulesSyncRow').classList.toggle('hidden', method !== 'folder');
-    el('rulesSyncHint').classList.toggle('hidden', method !== 'folder');
+    el('folderMethodBlock').classList.remove('hidden');
   }
 
   function updateConnectStatus(mode, name) {
@@ -180,41 +169,10 @@
     }
   }
 
-  // ---------- Manual templates (URI method) ----------
-  function renderManualTemplates() {
-    const wrap = el('manualTemplates');
-    wrap.innerHTML = '';
-    manualTemplates.forEach((t, idx) => {
-      const card = document.createElement('div');
-      card.className = 'manual-template';
-      card.innerHTML = `
-        <div class="row">
-          <input class="mt-name" placeholder="Template name (e.g. Concept Note)" value="${escapeHtml(t.name)}" />
-          <button class="danger-btn remove-template" type="button">Remove</button>
-        </div>
-        <div class="row">
-          <div>
-            <small class="hint">Properties (key: value per line)</small>
-            <textarea class="mt-props" placeholder="type: concept\nstatus: seed\ntags:\n  - philosophy">${escapeHtml(t.propertiesText)}</textarea>
-          </div>
-          <div>
-            <small class="hint">Body template (use {{content}} for the captured text, or leave blank to just append it)</small>
-            <textarea class="mt-body" placeholder="## Summary\n\n{{content}}">${escapeHtml(t.bodyTemplate)}</textarea>
-          </div>
-        </div>
-      `;
-      card.querySelector('.mt-name').addEventListener('input', (e) => { manualTemplates[idx].name = e.target.value; });
-      card.querySelector('.mt-props').addEventListener('input', (e) => { manualTemplates[idx].propertiesText = e.target.value; });
-      card.querySelector('.mt-body').addEventListener('input', (e) => { manualTemplates[idx].bodyTemplate = e.target.value; });
-      card.querySelector('.remove-template').addEventListener('click', () => { manualTemplates.splice(idx, 1); renderManualTemplates(); });
-      wrap.appendChild(card);
-    });
-  }
-
   async function saveProject() {
     const vaultName = el('fVaultName').value.trim();
     if (!vaultName) { alert('Enter the Obsidian vault name \u2014 it\u2019s used to identify this vault throughout the extension.'); return; }
-    const method = el('fMethod').value;
+    const method = 'folder';
 
     // Final safety check: don't let a folder/vault-name mismatch slip through silently.
     if (method === 'folder' && connectedHandle && vaultName.toLowerCase() !== connectedHandle.name.toLowerCase()) {
@@ -230,15 +188,9 @@
       name: vaultName, // no separate project name — the vault name is the identity
       vaultName,
       method,
-      templateFolder: el('fTemplateFolder').value.trim(),
-      defaultFolder: method === 'folder' ? el('fDefaultFolder').value.trim() : el('fDefaultFolderUri').value.trim(),
+      defaultFolder: el('fDefaultFolder').value.trim(),
       handleKey: editing ? editing.handleKey || null : null,
-      templates: method === 'uri' ? manualTemplates.map((t) => ({
-        name: t.name.trim() || 'Untitled template',
-        properties: ObsidianYaml.parseProperties(t.propertiesText),
-        bodyTemplate: t.bodyTemplate,
-      })) : undefined,
-      knownTags: method === 'uri' ? el('fKnownTags').value.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
+      yamlProperties: ObsidianYaml.parseProperties(el('fYamlProperties').value),
       rules: el('fRules').value.trim(),
       rulesNotePath: el('fRulesNotePath').value.trim() || ObsidianStorage.DEFAULT_RULES_NOTE_PATH,
     };
@@ -253,6 +205,14 @@
     }
 
     await ObsidianStorage.upsertProject(project);
+    await ObsidianStorage.setPropertyPreset(project.id, Object.entries(project.yamlProperties).map(([key, value]) => ({ key, value })));
+    if (project.handleKey && project.defaultFolder) {
+      const handle = connectedHandle || await ObsidianVault.getHandleForProject(project);
+      const granted = handle && await ObsidianVault.verifyPermission(handle, 'readwrite');
+      if (granted && Object.keys(project.yamlProperties).length > 0) {
+        await ObsidianVault.updateFolderProperties(handle, project.defaultFolder, project.yamlProperties);
+      }
+    }
     closeEditor();
     await refreshList();
   }
@@ -278,13 +238,8 @@
     el('newProjectBtn').addEventListener('click', () => openEditor(null));
     el('cancelEditBtn').addEventListener('click', closeEditor);
     el('saveProjectBtn').addEventListener('click', saveProject);
-    el('fMethod').addEventListener('change', toggleMethodBlocks);
     el('fVaultName').addEventListener('input', checkVaultNameMatch);
     el('connectFolderBtn').addEventListener('click', connectFolder);
-    el('addManualTemplateBtn').addEventListener('click', () => {
-      manualTemplates.push({ name: '', propertiesText: '', bodyTemplate: '' });
-      renderManualTemplates();
-    });
     el('loadRulesFromVaultBtn').addEventListener('click', loadRulesFromVault);
     el('saveRulesToVaultBtn').addEventListener('click', saveRulesToVault);
     refreshList();

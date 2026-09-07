@@ -2,13 +2,10 @@
  * Obsidian vault bridge.
  *
  * Primary path ("folder" method): uses the File System Access API to hold
- * a handle to the user's local vault folder, so the extension can read the
- * user's real template files and write the finished note directly onto
+ * a handle to the user's local vault folder, so the extension can read and
+ * write Markdown notes directly onto
  * disk, inside the vault, no server or native host required.
  *
- * Fallback path ("uri" method): builds an `obsidian://new` URI, for users
- * who'd rather not grant folder access, or on platforms without File
- * System Access support.
  */
 const ObsidianVault = (() => {
   async function pickVaultFolder() {
@@ -133,6 +130,40 @@ const ObsidianVault = (() => {
     await writable.close();
   }
 
+  async function updateFolderProperties(rootHandle, folderPath, properties) {
+    let dir;
+    try {
+      dir = await getDirectory(rootHandle, folderPath, { create: false });
+    } catch (e) {
+      return 0;
+    }
+    let updated = 0;
+    for await (const [name, handle] of dir.entries()) {
+      if (handle.kind !== 'file' || !name.toLowerCase().endsWith('.md')) continue;
+      const raw = await readFile(handle);
+      const split = ObsidianYaml.splitFrontMatter(raw);
+      const current = ObsidianYaml.parseProperties(split.yaml);
+      const content = ObsidianYaml.buildMarkdownWithFrontMatter({ ...current, ...properties }, split.body);
+      const writable = await handle.createWritable();
+      await writable.write(content);
+      await writable.close();
+      updated += 1;
+    }
+    return updated;
+  }
+
+  async function suggestNextFilename(rootHandle, folderPath, candidate) {
+    const safeCandidate = ObsidianFilename.sanitizeFilename(candidate || 'Untitled');
+    const match = /^(.*?)(\d+)$/.exec(safeCandidate);
+    if (!match) return safeCandidate;
+    const prefix = match[1];
+    const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const files = await listMarkdownFiles(rootHandle, folderPath);
+    const numbers = files.map((file) => new RegExp(`^${escapedPrefix}(\\d+)$`, 'i').exec(file.name))
+      .filter(Boolean).map((hit) => Number(hit[1]));
+    return numbers.length ? `${prefix}${Math.max(...numbers) + 1}` : safeCandidate;
+  }
+
   /**
    * Walks every .md file in the vault and collects the unique set of values
    * used in front-matter `tags` fields, so the popup can offer them as
@@ -208,26 +239,6 @@ const ObsidianVault = (() => {
     return [...notes].sort((a, b) => a.localeCompare(b));
   }
 
-  function buildObsidianUri({ vaultName, folderPath, filename, content }) {
-    const cleanFolder = ObsidianFilename.sanitizeFolderPath(folderPath);
-    const finalName = filename.endsWith('.md') ? filename : `${filename}.md`;
-    const filePath = cleanFolder ? `${cleanFolder}/${finalName}` : finalName;
-    const params = new URLSearchParams({
-      vault: vaultName || '',
-      file: filePath.replace(/\.md$/i, ''),
-      content: content,
-      overwrite: 'false',
-    });
-    return `obsidian://new?${params.toString()}`;
-  }
-
-  /** Builds an `obsidian://open` URI for jumping straight to an existing note (e.g. the rules page). */
-  function buildOpenUri({ vaultName, filePath }) {
-    const clean = ObsidianFilename.sanitizeFolderPath(filePath).replace(/\.md$/i, '');
-    const params = new URLSearchParams({ vault: vaultName || '', file: clean });
-    return `obsidian://open?${params.toString()}`;
-  }
-
   return {
     pickVaultFolder,
     verifyPermission,
@@ -241,8 +252,8 @@ const ObsidianVault = (() => {
     writeFileAtPath,
     scanVaultTags,
     scanVaultNoteNames,
-    buildObsidianUri,
-    buildOpenUri,
+    updateFolderProperties,
+    suggestNextFilename,
   };
 })();
 

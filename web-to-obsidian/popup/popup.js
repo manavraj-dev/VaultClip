@@ -7,8 +7,6 @@
     projects: [],
     project: null,
     rootHandle: null,
-    templates: [], // {name, source: 'file'|'manual', body, properties}
-    template: null,
     propRows: [], // {key, value}
     filenameTouched: false,
     lastMarkdown: null,
@@ -325,8 +323,6 @@
     try {
       if (state.project.method === 'folder' && state.rootHandle) {
         tags = await ObsidianVault.scanVaultTags(state.rootHandle);
-      } else if (state.project.method === 'uri' && Array.isArray(state.project.knownTags)) {
-        tags = state.project.knownTags;
       }
     } catch (e) {
       tags = [];
@@ -366,7 +362,7 @@
     el('rulesText').textContent = rules || 'No rules defined for this vault yet. Add them from Settings → this vault → Vault rules, to note what each tag/folder means so it\u2019s easy to stay consistent.';
   }
 
-  // ---------- Project / template loading ----------
+  // ---------- Project loading ----------
   async function loadProjects() {
     state.projects = await ObsidianStorage.getProjects();
     const select = el('projectSelect');
@@ -402,6 +398,7 @@
     state.rootHandle = null;
     state.vaultTagsLoaded = false;
     state.vaultNotesLoaded = false;
+    state.filenameTouched = false;
     el('vaultTagsList').innerHTML = '';
     el('vaultNotesList').innerHTML = '';
     el('rulesPanel').classList.add('hidden');
@@ -409,6 +406,7 @@
     el('folderInput').value = state.project ? state.project.defaultFolder || '' : '';
     populateFolderOptions([]);
     await loadPropertyPresetForProject();
+    initializeProperties();
 
     if (!state.project) return;
 
@@ -416,7 +414,6 @@
       const handle = await ObsidianVault.getHandleForProject(state.project);
       if (!handle) {
         showStatus('This vault\u2019s folder isn\u2019t connected. Open Settings to connect it.', 'error');
-        await loadTemplatesForProject([]);
         return;
       }
       let granted = false;
@@ -430,18 +427,15 @@
       }
       state.rootHandle = handle;
       try {
-        const files = await ObsidianVault.listMarkdownFiles(handle, state.project.templateFolder);
-        await loadTemplatesForProject(files.map((f) => ({ name: f.name, source: 'file', handle: f.handle })));
         const folders = await ObsidianVault.listFolders(handle);
         populateFolderOptions(folders);
+        const title = state.regionResult && !state.regionResult.error
+          ? state.regionResult.title
+          : (state.pageInfo ? state.pageInfo.title : 'Untitled');
+        el('filenameInput').value = await ObsidianVault.suggestNextFilename(handle, state.project.defaultFolder || '', title);
       } catch (e) {
         showStatus(`Couldn\u2019t read the vault folder: ${e.message}`, 'error');
-        await loadTemplatesForProject([]);
       }
-    } else {
-      // uri method: templates are manually defined in project config
-      const manual = (state.project.templates || []).map((t) => ({ ...t, source: 'manual' }));
-      await loadTemplatesForProject(manual);
     }
   }
 
@@ -455,37 +449,8 @@
     });
   }
 
-  async function loadTemplatesForProject(templates) {
-    state.templates = templates;
-    const select = el('templateSelect');
-    select.innerHTML = '<option value="">No template</option>';
-    templates.forEach((t, idx) => {
-      const opt = document.createElement('option');
-      opt.value = String(idx);
-      opt.textContent = t.name;
-      select.appendChild(opt);
-    });
-    select.value = '';
-    await onTemplateChange();
-  }
-
-  async function onTemplateChange() {
-    const val = el('templateSelect').value;
-    let properties = {};
-    let body = '';
-    if (val !== '' && state.templates[+val]) {
-      const t = state.templates[+val];
-      if (t.source === 'file') {
-        const raw = await ObsidianVault.readFile(t.handle);
-        const { yaml, body: b } = ObsidianYaml.splitFrontMatter(raw);
-        properties = ObsidianYaml.parseProperties(yaml);
-        body = b;
-      } else {
-        properties = t.properties || {};
-        body = t.bodyTemplate || '';
-      }
-    }
-    state.template = { body };
+  function initializeProperties() {
+    const properties = {};
     let nextRows = Object.keys(properties).map((k) => ({
       key: k,
       value: formatPropertyValue(k, properties[k]),
@@ -519,14 +484,6 @@
     return props;
   }
 
-  function mergeTemplateBody(templateBody, markdown) {
-    if (!templateBody || !templateBody.trim()) return markdown;
-    if (/{{\s*content\s*}}/i.test(templateBody)) {
-      return templateBody.replace(/{{\s*content\s*}}/i, markdown);
-    }
-    return `${templateBody.trim()}\n\n${markdown}`;
-  }
-
   async function runCapturePipeline() {
     const mode = getSelectedMode();
     let result;
@@ -543,9 +500,8 @@
     if (state.extraContent && state.extraContent.trim()) {
       markdown = `${markdown}\n\n---\n\n${state.extraContent.trim()}`;
     }
-    const body = mergeTemplateBody(state.template ? state.template.body : '', markdown);
     const props = buildPropertiesObject();
-    const finalMarkdown = ObsidianYaml.buildMarkdownWithFrontMatter(props, body);
+    const finalMarkdown = ObsidianYaml.buildMarkdownWithFrontMatter(props, markdown);
 
     if (!state.filenameTouched) {
       el('filenameInput').value = ObsidianFilename.sanitizeFilename(result.title || 'Untitled');
@@ -579,23 +535,12 @@
       const filename = ObsidianFilename.sanitizeFilename(el('filenameInput').value || 'Untitled');
       const folder = el('folderInput').value || '';
 
-      if (state.project.method === 'folder') {
-        let handle = state.rootHandle || await ObsidianVault.getHandleForProject(state.project);
-        if (!handle) throw new Error('Vault folder not connected. Open Settings to connect it.');
-        const granted = await ObsidianVault.verifyPermission(handle, 'readwrite');
-        if (!granted) throw new Error('Folder access was not granted.');
-        const savedName = await ObsidianVault.writeNote(handle, folder, filename, content);
-        showStatus(`Saved to ${folder ? folder + '/' : ''}${savedName}`, 'success');
-      } else {
-        const uri = ObsidianVault.buildObsidianUri({
-          vaultName: state.project.vaultName,
-          folderPath: folder,
-          filename,
-          content,
-        });
-        await chrome.tabs.create({ url: uri });
-        showStatus('Opening Obsidian to create the note\u2026', 'success');
-      }
+      const handle = state.rootHandle || await ObsidianVault.getHandleForProject(state.project);
+      if (!handle) throw new Error('Vault folder not connected. Open Settings to connect it.');
+      const granted = await ObsidianVault.verifyPermission(handle, 'readwrite');
+      if (!granted) throw new Error('Folder access was not granted.');
+      const savedName = await ObsidianVault.writeNote(handle, folder, filename, content);
+      showStatus(`Saved to ${folder ? folder + '/' : ''}${savedName}`, 'success');
 
       await ObsidianStorage.setLastUsed({ projectId: state.project.id, mode: getSelectedMode() });
     } catch (e) {
@@ -610,7 +555,6 @@
     el('openOptions').addEventListener('click', () => chrome.runtime.openOptionsPage());
     el('goToOptionsBtn').addEventListener('click', () => chrome.runtime.openOptionsPage());
     el('projectSelect').addEventListener('change', onProjectChange);
-    el('templateSelect').addEventListener('change', onTemplateChange);
     el('addPropertyBtn').addEventListener('click', () => {
       state.propRows.push({ key: '', value: '', draft: '' });
       renderProperties();

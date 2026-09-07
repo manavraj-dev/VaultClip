@@ -13,7 +13,7 @@ const ObsidianTerms = (() => {
 By installing and using the Web \u2192 Obsidian browser extension ("the Extension"), you agree to the following terms. If you do not agree, do not use the Extension.
 
 1. What this Extension does
-The Extension reads content from web pages you actively choose to capture, converts it to Markdown, and writes it to a location you configure \u2014 either directly to a folder on your device (via your browser's File System Access permission) or by opening an obsidian:// link. The Extension does not operate a server, does not require an account, and does not transmit your captured content, vault contents, templates, or settings to the developer or any third party.
+The Extension reads content from web pages you actively choose to capture, converts it to Markdown, and writes it directly to a local folder you configure using your browser's File System Access permission. The Extension does not operate a server, does not require an account, and does not transmit your captured content, vault contents, or settings to the developer or any third party.
 
 2. Your responsibility
 You are solely responsible for: the content you choose to capture and your compliance with the terms of service, copyright, and applicable law of any website you capture from; verifying that the vault folder you connect is the correct one; reviewing captured notes before relying on them; and maintaining your own backups of your Obsidian vault. The Extension writes files directly into a folder you select.

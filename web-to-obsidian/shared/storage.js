@@ -8,14 +8,13 @@
  * Project shape:
  * {
  *   id, name,                   // name === vaultName, kept in sync automatically
- *   method: 'folder' | 'uri',
+ *   method: 'folder',
  *   vaultName: string,           // the exact Obsidian vault name — also the folder name for 'folder' method
  *   handleKey: string|null,      // key into IndexedDB for the FileSystemDirectoryHandle (folder method)
- *   templateFolder: string,      // path within vault, e.g. "Templates"
  *   defaultFolder: string,       // path within vault, e.g. "Sources"
  *   rules: string,               // free-form notes on what each tag/folder/property means for this vault
  *   rulesNotePath: string,       // ('folder' method) vault-relative path where `rules` is mirrored as a real note
- *   knownTags: string[],         // ('uri' method only) manually-listed tags, since the vault can't be scanned
+ *   yamlProperties: object,      // default YAML properties for new and existing notes
  * }
  */
 const ObsidianStorage = (() => {
@@ -26,7 +25,8 @@ const ObsidianStorage = (() => {
 
   async function getProjects() {
     const data = await chrome.storage.local.get(KEY);
-    return data[KEY] || [];
+    const projects = data[KEY] || [];
+    return projects.map((project) => ({ ...project, method: 'folder' }));
   }
 
   async function saveProjects(projects) {
