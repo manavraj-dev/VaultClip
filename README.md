@@ -1,4 +1,4 @@
-# Web to Obsidian
+# VaultClip
 
 Capture web pages, selections, conversations, videos, or a drawn region as clean Markdown notes in a local Obsidian vault.
 
