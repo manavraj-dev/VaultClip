@@ -86,8 +86,12 @@
         </section>
 
         <section class="field">
-          <label for="filenameInput">Filename</label>
+          <div class="field-header">
+            <label for="filenameInput">Filename</label>
+            <button id="suggestTitleBtn" class="link-btn" type="button">NLP title</button>
+          </div>
           <input id="filenameInput" placeholder="Untitled.md" />
+          <div class="hint">Builds a filename suggestion from the current capture and folder.</div>
         </section>
 
         <section class="field">
@@ -121,6 +125,7 @@
   <script src="../shared/idb.js"></script>
   <script src="../shared/yaml.js"></script>
   <script src="../shared/filename.js"></script>
+  <script src="../shared/nlp.js"></script>
   <script src="../shared/storage.js"></script>
   <script src="../shared/vault.js"></script>
   <script src="../lib/turndown.js"></script>

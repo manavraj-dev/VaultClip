@@ -17,6 +17,8 @@
     propertyPresetRows: [],
     hasPropertyPreset: false,
     persistPropsTimer: null,
+    lastCaptureResult: null,
+    suggestTitleTimer: null,
   };
 
   const DYNAMIC_PROPERTY_KEYS = new Set(['title', 'source', 'captured']);
@@ -45,6 +47,22 @@
   function setSelectedMode(mode) {
     const input = document.querySelector(`input[name="mode"][value="${mode}"]`);
     if (input) input.checked = true;
+  }
+
+  function getFallbackTitle() {
+    if (state.regionResult && !state.regionResult.error && state.regionResult.title) return state.regionResult.title;
+    if (state.pageInfo && state.pageInfo.title) return state.pageInfo.title;
+    if (state.tab && state.tab.title) return state.tab.title;
+    return 'Untitled';
+  }
+
+  function scheduleFilenameSuggestion() {
+    if (state.filenameTouched) return;
+    if (state.suggestTitleTimer) window.clearTimeout(state.suggestTitleTimer);
+    state.suggestTitleTimer = window.setTimeout(() => {
+      state.suggestTitleTimer = null;
+      suggestTitleForFilename({ silent: true }).catch(() => {});
+    }, 150);
   }
 
   async function pingActiveTab(tabId) {
@@ -430,6 +448,7 @@
       try {
         const folders = await ObsidianVault.listFolders(handle);
         populateFolderOptions(folders);
+        suggestTitleForFilename({ silent: true }).catch(() => {});
         const title = state.regionResult && !state.regionResult.error
           ? state.regionResult.title
           : (state.pageInfo ? state.pageInfo.title : 'Untitled');
@@ -446,6 +465,7 @@
         showStatus(`Couldn\u2019t read the vault folder: ${e.message}`, 'error');
       }
     }
+    await suggestTitleForFilename({ silent: true });
   }
 
   function populateFolderOptions(folders) {
@@ -492,7 +512,7 @@
     return props;
   }
 
-  async function runCapturePipeline() {
+  async function getCaptureResult() {
     const mode = getSelectedMode();
     let result;
     if (mode === 'region') {
@@ -504,6 +524,34 @@
     if (!result || result.error) {
       throw new Error((result && result.error) || 'Could not read this page.');
     }
+    state.lastCaptureResult = { ...result, mode };
+    return result;
+  }
+
+  async function suggestTitleForFilename({ silent = false, force = false } = {}) {
+    if (state.filenameTouched && !force) return;
+    const folder = el('folderInput').value || '';
+    let result = null;
+    try {
+      result = await getCaptureResult();
+    } catch (e) {
+      result = null;
+      if (!silent) showStatus(`Title suggestion fallback: ${e.message}`, 'info');
+    }
+    const suggestion = ObsidianNlp.suggestNoteTitle({
+      html: result ? result.html : '',
+      pageTitle: result && result.title ? result.title : getFallbackTitle(),
+      folderPath: folder,
+    });
+    let filename = ObsidianFilename.sanitizeFilename(suggestion || getFallbackTitle());
+    if (state.rootHandle) {
+      filename = await ObsidianVault.suggestNextFilename(state.rootHandle, folder, filename);
+    }
+    el('filenameInput').value = filename;
+  }
+
+  async function runCapturePipeline() {
+    const result = await getCaptureResult();
     let markdown = turndownService.turndown(result.html || '');
     if (state.extraContent && state.extraContent.trim()) {
       markdown = `${markdown}\n\n---\n\n${state.extraContent.trim()}`;
@@ -568,11 +616,24 @@
     el('openOptions').addEventListener('click', () => chrome.runtime.openOptionsPage());
     el('goToOptionsBtn').addEventListener('click', () => chrome.runtime.openOptionsPage());
     el('projectSelect').addEventListener('change', onProjectChange);
+    el('folderInput').addEventListener('input', scheduleFilenameSuggestion);
+    document.querySelectorAll('input[name="mode"]').forEach((input) => {
+      input.addEventListener('change', scheduleFilenameSuggestion);
+    });
     el('addPropertyBtn').addEventListener('click', () => {
       state.propRows.push({ key: '', value: '', draft: '' });
       renderProperties();
     });
     el('filenameInput').addEventListener('input', () => { state.filenameTouched = true; });
+    el('suggestTitleBtn').addEventListener('click', async () => {
+      state.filenameTouched = false;
+      clearStatus();
+      try {
+        await suggestTitleForFilename({ force: true });
+      } catch (e) {
+        showStatus(e.message, 'error');
+      }
+    });
     el('previewBtn').addEventListener('click', handlePreview);
     el('saveBtn').addEventListener('click', handleSave);
 
