@@ -15,6 +15,7 @@ The extension runs entirely in the browser. It uses the File System Access API t
 - Properties added or edited for a note are remembered for the next note in that vault.
 - Properties removed in the popup are removed from the remembered set and are not silently re-added later. Add them again in the popup when needed.
 - The page title is used for the filename suggestion, not added as a default property.
+- Add an `NLP title` action in the filename area to build a note name from the captured content and selected folder.
 - Suggest the next sequential filename: an existing `b2` leads to `b3`.
 - Suggest existing vault tags and note links while editing properties.
 - Preview and edit the complete Markdown note before saving.
@@ -46,6 +47,8 @@ The extension only writes to a folder after the browser grants read/write permis
 Filenames start from the captured page title. After you save a numbered filename, the extension remembers that sequence for the selected vault and folder. The next time the popup opens it suggests the next number, such as `bit 1` → `bit 2` → `bit 3`. Existing files are also scanned so the sequence continues from the highest matching number.
 
 The filename remains fully editable. Existing notes are never overwritten; a duplicate name receives a numeric suffix when saved.
+
+The filename area also includes an `NLP title` control. It analyzes the current capture locally in the popup, blends that with the selected folder path, and proposes a more note-like title without sending content to any external service.
 
 ## Capture modes
 
